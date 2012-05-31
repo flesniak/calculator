@@ -1,4 +1,4 @@
-static const char version[] = "0.1a";
+static const char version[] = "0.1";
 
 class interface {
   public:

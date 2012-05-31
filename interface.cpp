@@ -28,13 +28,10 @@ int interface::talk() {
       parse->setDebug(!parse->getDebug()); //toggles debug output
       continue;
     }
-    switch( parse->parse(expression) ) {
-      case parser::complete : cout << expression << " = " << parse->result() << endl;
-                              break;
-      case parser::error    : cout << "Syntax error near: " << parse->getError() << endl;
-                              break;
-      default               : cout << "Internal parser error" << endl;
-    }
+    if( parse->parse(expression) == parser::complete )
+       cout << expression << " = " << parse->result() << endl;
+    else
+      cout << parse->getError() << endl;
   }
 
   cout << "Goodbye" << endl;
