@@ -44,7 +44,7 @@ parser::state parser::parse(const string& expression) {
 
   //Shunting-yard algorithm
   while( p_state == running && !p_expression.empty() ) { //process p_expression until it is empty or we encouter a p_state change
-    debug("parse() parsing expression "+p_expression);
+    debug("parse() parsing expression "+p_expression+(needoperator ? " need operator" : " dont need operator"));
     //Process input
     if( !needoperator && extractNumber(temp) ) { //we won't try to read two numbers in a row, if extractNumber fails, try to exractOperator
       if( !p_operators.empty() && p_operators.top() > operators::operatorCount && p_operators.top() != operators::rbracket ) {
@@ -65,12 +65,15 @@ parser::state parser::parse(const string& expression) {
         }
         if( p_state != running ) //if processOperator encountered an error, return
           return p_state;
-        if( (op > operators::operatorCount || op == operators::lbracket) && p_numbers.size()-1 == p_operators.size() ) { //prepend operators::times to functions and parentheses where it is left out
+        if( (op > operators::operatorCount || op == operators::lbracket) && needoperator ) { //prepend operators::times to functions and parentheses where it is left out
           debug("parse() function without preceeding operator, inserting operator %o1",operators::times);
           p_operators.push(operators::times);
         }
         p_operators.push(op);
-        needoperator = false;
+        if( op > operators::functionCount ) //Constants are just being replaced, so we still need an operator!
+          needoperator = true;
+        else
+          needoperator = false;
         debug("parse() operator %o1 found",p_operators.top());
         if( op == operators::rbracket ) //Immediately process parentheses
           processOperator();
@@ -203,7 +206,7 @@ void parser::processOperator() {
     case operators::lbracket : debug("processOperator() lbracket"); //nothing to do here, lbracket only gets processed while processing the corresponding rbracket, so its save to be pop'ed
                                break;
     case operators::rbracket : p_operators.pop(); //pop that rbracket
-                               while( !p_operators.empty() && p_operators.top() != operators::lbracket ) { //process everything until we reach a lbracket
+                               while( p_state == running && !p_operators.empty() && p_operators.top() != operators::lbracket ) { //process everything until we reach a lbracket
                                  debug("processOperator() processing rbracket...");
                                  processOperator();
                                }

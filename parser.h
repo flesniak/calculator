@@ -5,8 +5,8 @@
 using namespace std;
 
 namespace operators { //Namespace to avoid conflicts
-  enum ops { none, lbracket, plus, minus, times, divide, operatorCount, sin, cos, tan, arcsin, arccos, arctan, pi, rbracket, opFunCount }; //sorted by importance, rbracket has to be highest
-  //            0         1     2      3      4       5              6    7    8    9      10      11      12  13        14          15
+  enum ops { none, lbracket, rbracket, plus, minus, times, divide, operatorCount, sin, cos, tan, arcsin, arccos, arctan, functionCount, pi, constantCount }; //sorted by importance, rbracket has to be highest
+  //            0         1         2     3      4      5       6              7    8    9      10      11      12  13        14          15
 };
 
 class parser {
