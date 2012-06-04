@@ -68,15 +68,19 @@ parser::state parser::parse(const string& expression) {
         if( (op > operators::operatorCount || op == operators::lbracket) && needoperator ) { //prepend operators::times to functions and parentheses where it is left out
           debug("parse() function without preceeding operator, inserting operator %o1",operators::times);
           p_operators.push(operators::times);
+          //processOperator(); //could be possible that we inserted in front of an more important operator (i.e. sin(pi)_cos(pi) insert * at _, so we shall process 
         }
+        ///Nach klammer processing muss ggf funktion berechnet werden!
         p_operators.push(op);
-        if( op > operators::functionCount ) //Constants are just being replaced, so we still need an operator!
+        if( op > operators::functionCount || op == operators::rbracket ) //Constants are just being replaced, so we still need an operator!
           needoperator = true;
         else
           needoperator = false;
         debug("parse() operator %o1 found",p_operators.top());
-        if( op == operators::rbracket ) //Immediately process parentheses
+        if( op == operators::rbracket ) { //Immediately process parentheses
           processOperator();
+          /*if( !p_operators.empty() && p_operators.top() > operatorCount && p_operators.top() < functionCount )
+            processOperator();*/
       }
       else {
         p_state = syntaxerror;
