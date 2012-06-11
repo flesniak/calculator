@@ -31,8 +31,7 @@ parser::parser() {
   p_opmap["pi"] = operators::pi;
   p_opmap["Pi"] = operators::pi;
   p_opmap["PI"] = operators::pi;
-  p_opmap["e"] = operators::e; //note that this is ambiguous, 1e3 will be converted to 1000, if in doubt, use exp
-  p_opmap["exp"] = operators::e;
+  p_opmap["e"] = operators::e; //note that "2e+4" is "2*e+4" while "2E+4" is "2*10^4"
   p_opmap["negation"] = operators::negation; //map negation, may be used in formula but mainly useful for debugging output (reverse lookup)
 }
 
@@ -321,26 +320,18 @@ void parser::clear() {
 //Tries to extract a number at the beginning of p_expression, returns true on success and sets value to the extracted number. Otherwise returns false, value is not proved to remain unchanged in both cases
 bool parser::extractNumber(double &value) {
   debug("extractNumber "+p_expression);
+  size_t find = p_expression.find('e');
+  string save(find < p_expression.npos ? p_expression.substr(find,p_expression.npos) : "");
   istringstream convert;
-  convert.str(p_expression);
+  convert.str(p_expression.substr(0,find)); //make sure to not scan small 'e', only 'E' will be used to do "*10^"
   if( convert >> value ) {
     string temp;
     convert >> temp; //on success, write the remaining unconverted part back to p_expression for further analysis
-    p_expression = temp;
+    p_expression = temp+save;
     return true;
   }
-  else {
-    size_t find = p_expression.find('e');
-    if( find != p_expression.npos ) { //Workaround for strings containing 'e' like "3e" (read as "3*e"), for which istringstream fails due to expecting something like "3e2"
-      debug("workaround find %v1",find);
-      string save = p_expression.substr(find,p_expression.npos);
-      p_expression = p_expression.substr(0,find);
-      bool success = extractNumber(value);
-      p_expression.append(save);
-      return success;
-    }
+  else
     return false;
-  }
 }
 
 //Behaviour similar to extractNumber
