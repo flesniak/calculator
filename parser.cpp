@@ -13,6 +13,7 @@ parser::parser() {
   p_opmap["-"] = operators::minus;
   p_opmap["*"] = operators::times;
   p_opmap["/"] = operators::divide;
+  p_opmap["^"] = operators::pow;
   p_opmap["sin"] = operators::sin;
   p_opmap["cos"] = operators::cos;
   p_opmap["tan"] = operators::tan;
@@ -30,6 +31,8 @@ parser::parser() {
   p_opmap["pi"] = operators::pi;
   p_opmap["Pi"] = operators::pi;
   p_opmap["PI"] = operators::pi;
+  p_opmap["e"] = operators::e; //note that this is ambiguous, 1e3 will be converted to 1000, if in doubt, use exp
+  p_opmap["exp"] = operators::e;
 }
 
 //parse expression
@@ -46,7 +49,7 @@ parser::state parser::parse(const string& expression) {
   while( p_state == running && !p_expression.empty() ) { //process p_expression until it is empty or we encouter a p_state change
     debug("parse() parsing expression "+p_expression+(needoperator ? " need operator" : " dont need operator"));
     //Process input
-    if( !needoperator && extractNumber(temp) ) { //we won't try to read two numbers in a row, if extractNumber fails, try to exractOperator
+    if( !needoperator && extractNumber(temp) ) { //we won't try to read two numbers in a row (!needoperator), if extractNumber fails, try to exractOperator
       if( !p_operators.empty() && p_operators.top() > operators::operatorCount && p_operators.top() != operators::rbracket ) {
         debug("parse() missing operator before %v1",temp);
         p_errorstring = "Operator missing";
@@ -57,37 +60,69 @@ parser::state parser::parse(const string& expression) {
       needoperator = true;
       debug("parse() found number %v1",p_numbers.top());
     }
-    else {
+    else { //BEGIN OPERATOR HANDLING (this will be nasty)
       if( extractOperator(op) ) {
-        while( p_state == running && !p_operators.empty() && op != operators::lbracket && op != operators::rbracket && p_operators.top() >= op ) { //process operators with higher priority, parentheses need special care
+        //Handle minus-sign (it's not an operator here!) - only for functions and constants, negative number like in "2--4" can be processed by extractNumber
+        if( !needoperator && op == operators::minus ) {
+          debug("parse() dont need operator but found operator %o1, replacing with %o2 %v1",-1,0,operators::minus,operators::times);
+          op = operators::times;
+          temp = -1;
+          if( p_operators.top() >= operators::divide && p_operators.top() < operators::operatorCount ) { //Workaround for expressions like "2/-sin(.5pi)", would normally be processed like "2/-1*sin(.5pi)" because divide has higher priority than times
+            debug("parse() special minus-sign handling");
+            op = p_operators.top();
+            p_operators.pop();
+            switch(op) {
+              case operators::divide : p_operators.push(operators::times);
+                                       break;
+              case operators::pow    : p_operators.push(operators::divide);
+                                       temp = 1;
+                                       break;
+            }
+          }
+          p_numbers.push(temp);
+        }
+
+        //Process operators with higher priority, parentheses need special care
+        while( p_state == running && !p_operators.empty() && op > operators::bracketCount && p_operators.top() >= op ) {
           debug("parse() preferring operator %o1 over %o2",p_operators.top(),op);
           processOperator();
         }
-        if( p_state != running ) //if processOperator encountered an error, return
+
+        //if processOperator encountered an error, return
+        if( p_state != running )
           return p_state;
-        if( (op > operators::operatorCount || op == operators::lbracket) && needoperator ) { //prepend operators::times to functions and parentheses where it is left out
+
+        //prepend operators::times to functions and parentheses where it is left out
+        if( (op > operators::operatorCount || op == operators::lbracket) && needoperator ) {
           debug("parse() function without preceeding operator, inserting operator %o1",operators::times);
           p_operators.push(operators::times);
-          //processOperator(); //could be possible that we inserted in front of an more important operator (i.e. sin(pi)_cos(pi) insert * at _, so we shall process 
         }
-        ///Nach klammer processing muss ggf funktion berechnet werden!
+
+        //push operator on stack
         p_operators.push(op);
-        if( op > operators::functionCount || op == operators::rbracket ) //Constants are just being replaced, so we still need an operator!
+        debug("parse() operator %o1 found",p_operators.top());
+
+        //Constants are just being replaced, so we still need an operator!
+        if( op > operators::functionCount || op == operators::rbracket )
           needoperator = true;
         else
           needoperator = false;
-        debug("parse() operator %o1 found",p_operators.top());
-        if( op == operators::rbracket ) { //Immediately process parentheses
+
+        //Process parentheses
+        if( op == operators::rbracket ) {
           processOperator();
-          /*if( !p_operators.empty() && p_operators.top() > operatorCount && p_operators.top() < functionCount )
-            processOperator();*/
+          if( !p_operators.empty() && p_operators.top() > operators::operatorCount && p_operators.top() < operators::functionCount ) {
+            debug("parse() rbracket belongs to operator %o1, calculating...",p_operators.top());
+            processOperator();
+          }
+        }
       }
-      else {
+      else { //extractOperator was unable to process p_expression
         p_state = syntaxerror;
         p_errorstring = "unable to parse " + p_expression;
         return p_state;
       }
-    }
+    } //END OPERATOR HANDLING
   }
   debug("parse() finished, computing remaining operators/numbers");
 
@@ -169,6 +204,18 @@ void parser::processOperator() {
                               p_numbers.push(temp2 / temp1); //take care of correct sequence!
                               debug("processOperator() %v1 / %v2 ",temp2,temp1);
                               break;
+    case operators::pow     : if( p_numbers.size() < 2 ) {
+                                debug("processOperator() pow: not enough numbers");
+                                p_state = syntaxerror;
+                                return;
+                              }
+                              temp1 = p_numbers.top();
+                              p_numbers.pop();
+                              temp2 = p_numbers.top();
+                              p_numbers.pop();
+                              p_numbers.push(pow(temp1,temp2));
+                              debug("processOperator() %v1 ^ %v2 ",temp2,temp1);
+                              break;
     case operators::sin     : if( p_numbers.size() < 1 ) {
                                 debug("processOperator() sin: not enough numbers");
                                 p_state = syntaxerror;
@@ -199,6 +246,36 @@ void parser::processOperator() {
                               p_numbers.push(tan(temp1));
                               debug("processOperator() tan(%v1)",temp1);
                               break;
+    case operators::arcsin  : if( p_numbers.size() < 1 ) { //no need to check domain, c++ does that for us, e.g. asin(-2) returns "nan"
+                                debug("processOperator() arcsin: not enough numbers");
+                                p_state = syntaxerror;
+                                return;
+                              }
+                              temp1 = p_numbers.top();
+                              p_numbers.pop();
+                              p_numbers.push(asin(temp1));
+                              debug("processOperator() arcsin(%v1)",temp1);
+                              break;
+    case operators::arccos  : if( p_numbers.size() < 1 ) {
+                                debug("processOperator() arccos: not enough numbers");
+                                p_state = syntaxerror;
+                                return;
+                              }
+                              temp1 = p_numbers.top();
+                              p_numbers.pop();
+                              p_numbers.push(acos(temp1));
+                              debug("processOperator() arccos(%v1)",temp1);
+                              break;
+    case operators::arctan  : if( p_numbers.size() < 1 ) {
+                                debug("processOperator() arctan: not enough numbers");
+                                p_state = syntaxerror;
+                                return;
+                              }
+                              temp1 = p_numbers.top();
+                              p_numbers.pop();
+                              p_numbers.push(atan(temp1));
+                              debug("processOperator() arctan(%v1)",temp1);
+                              break;
     case operators::pi      : //If the local implementation defines M_PI, use it, but if its missing due to it's not being standard, push our hardcoded pi
                               #ifdef M_PI
                                 p_numbers.push(M_PI);
@@ -206,6 +283,14 @@ void parser::processOperator() {
                                 p_numbers.push(3.14159);
                               #endif
                               debug("processOperator() pi");
+                              break;
+    case operators::e       : //If the local implementation defines M_E, use it, but if its missing due to it's not being standard, push our hardcoded pi
+                              #ifdef M_E
+                                p_numbers.push(M_E);
+                              #else
+                                p_numbers.push(2.71828);
+                              #endif
+                              debug("processOperator() e");
                               break;
     case operators::lbracket : debug("processOperator() lbracket"); //nothing to do here, lbracket only gets processed while processing the corresponding rbracket, so its save to be pop'ed
                                break;
@@ -238,7 +323,7 @@ void parser::clear() {
   p_state = complete;
 }
 
-//Tries to extract a number off the beginning of p_expression, returns true on success and sets value to the extracted number. Otherwise returns false, value is not proved to remain unchanged in both cases
+//Tries to extract a number at the beginning of p_expression, returns true on success and sets value to the extracted number. Otherwise returns false, value is not proved to remain unchanged in both cases
 bool parser::extractNumber(double &value) {
   istringstream convert;
   convert.str(p_expression);
@@ -248,8 +333,15 @@ bool parser::extractNumber(double &value) {
     p_expression = temp;
     return true;
   }
-  else
+  else {
+    if( p_expression.find('e') != p_expression.npos ) { //Workaround for strings containing 'e' like "3e" (read as "3*e"), for which istringstream fails due to expecting something like "3e2"
+      p_expression.erase(p_expression.find("e"),1); //Replace first appearance of 'e'
+      bool success = extractNumber(value);
+      p_expression.insert(0,1,'e'); //re-append our replaced 'e'
+      return success;
+    }
     return false;
+  }
 }
 
 //Behaviour similar to extractNumber
@@ -294,7 +386,7 @@ string parser::getError() {
   }
 }
 
-//only debug() prepares strings to save runtime during normal operation, specific operators in message will be replaced with the other parameters:
+//only debug() prepares strings to save runtime during normal operation, specific operators in message will be replaced by the other parameters:
 // %o1 -> o1  |  %o2 -> o2  |  %v1 -> v1  |  %v2 -> v2
 void parser::debug(const string& message, const double v1, const double v2, const operators::ops op1, const operators::ops op2) {
   if( p_debug ) {
@@ -302,10 +394,10 @@ void parser::debug(const string& message, const double v1, const double v2, cons
     int find;
     find = debugstr.find("%o1");
     if( find != string::npos )
-      debugstr.replace(find,3,d2s((int)op1));
+      debugstr.replace(find,3,o2s(op1));
     find = debugstr.find("%o2");
     if( find != string::npos )
-      debugstr.replace(find,3,d2s((int)op2));
+      debugstr.replace(find,3,o2s(op2));
     find = debugstr.find("%v1");
     if( find != string::npos )
       debugstr.replace(find,3,d2s(v1));
@@ -321,10 +413,17 @@ void parser::debug(const string& message, const operators::ops op1, const operat
 }
 
 //converts double to string for debugging function
-string parser::d2s(double v) {
+string parser::d2s(const double v) {
   ostringstream convert;
   convert << v;
   return convert.str();
+}
+
+string parser::o2s(const operators::ops op) {
+  for(map<string,operators::ops>::iterator it = p_opmap.begin(); it != p_opmap.end(); it++)
+    if( it->second == op )
+      return it->first;
+  return string();
 }
 
 void parser::setDebug(bool active) {
