@@ -320,6 +320,7 @@ void parser::clear() {
 
 //Tries to extract a number at the beginning of p_expression, returns true on success and sets value to the extracted number. Otherwise returns false, value is not proved to remain unchanged in both cases
 bool parser::extractNumber(double &value) {
+  debug("extractNumber "+p_expression);
   istringstream convert;
   convert.str(p_expression);
   if( convert >> value ) {
@@ -329,10 +330,13 @@ bool parser::extractNumber(double &value) {
     return true;
   }
   else {
-    if( p_expression.find('e') != p_expression.npos ) { //Workaround for strings containing 'e' like "3e" (read as "3*e"), for which istringstream fails due to expecting something like "3e2"
-      p_expression.erase(p_expression.find("e"),1); //Replace first appearance of 'e'
+    size_t find = p_expression.find('e');
+    if( find != p_expression.npos ) { //Workaround for strings containing 'e' like "3e" (read as "3*e"), for which istringstream fails due to expecting something like "3e2"
+      debug("workaround find %v1",find);
+      string save = p_expression.substr(find,p_expression.npos);
+      p_expression = p_expression.substr(0,find);
       bool success = extractNumber(value);
-      p_expression.insert(0,1,'e'); //re-append our replaced 'e'
+      p_expression.append(save);
       return success;
     }
     return false;
