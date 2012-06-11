@@ -5,7 +5,7 @@
 using namespace std;
 
 namespace operators { //Namespace to avoid conflicts
-  enum ops { none, lbracket, rbracket, bracketCount, plus, minus, times, divide, pow, operatorCount, sin, cos, tan, arcsin, arccos, arctan, functionCount, pi, e, constantCount }; //sorted by importance, rbracket has to be highest
+  enum ops { none, lbracket, rbracket, bracketCount, plus, minus, times, divide, pow, negation, operatorCount, sin, cos, tan, arcsin, arccos, arctan, functionCount, pi, e, constantCount }; //sorted by importance, rbracket has to be highest
   //            0         1         2     3      4      5       6              7    8    9      10      11      12  13        14          15
 };
 

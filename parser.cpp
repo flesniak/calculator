@@ -33,6 +33,7 @@ parser::parser() {
   p_opmap["PI"] = operators::pi;
   p_opmap["e"] = operators::e; //note that this is ambiguous, 1e3 will be converted to 1000, if in doubt, use exp
   p_opmap["exp"] = operators::e;
+  p_opmap["negation"] = operators::negation; //map negation, may be used in formula but mainly useful for debugging output (reverse lookup)
 }
 
 //parse expression
@@ -62,25 +63,9 @@ parser::state parser::parse(const string& expression) {
     }
     else { //BEGIN OPERATOR HANDLING (this will be nasty)
       if( extractOperator(op) ) {
-        //Handle minus-sign (it's not an operator here!) - only for functions and constants, negative number like in "2--4" can be processed by extractNumber
-        if( !needoperator && op == operators::minus ) {
-          debug("parse() dont need operator but found operator %o1, replacing with %o2 %v1",-1,0,operators::minus,operators::times);
-          op = operators::times;
-          temp = -1;
-          if( p_operators.top() >= operators::divide && p_operators.top() < operators::operatorCount ) { //Workaround for expressions like "2/-sin(.5pi)", would normally be processed like "2/-1*sin(.5pi)" because divide has higher priority than times
-            debug("parse() special minus-sign handling");
-            op = p_operators.top();
-            p_operators.pop();
-            switch(op) {
-              case operators::divide : p_operators.push(operators::times);
-                                       break;
-              case operators::pow    : p_operators.push(operators::divide);
-                                       temp = 1;
-                                       break;
-            }
-          }
-          p_numbers.push(temp);
-        }
+        //Handle negation
+        if( !needoperator && op == operators::minus )
+          op = operators::negation;
 
         //Process operators with higher priority, parentheses need special care
         while( p_state == running && !p_operators.empty() && op > operators::bracketCount && p_operators.top() >= op ) {
@@ -213,8 +198,18 @@ void parser::processOperator() {
                               p_numbers.pop();
                               temp2 = p_numbers.top();
                               p_numbers.pop();
-                              p_numbers.push(pow(temp1,temp2));
+                              p_numbers.push(pow(temp2,temp1));
                               debug("processOperator() %v1 ^ %v2 ",temp2,temp1);
+                              break;
+    case operators::negation : if( p_numbers.size() < 1 ) {
+                                debug("processOperator() negation: not enough numbers");
+                                p_state = syntaxerror;
+                                return;
+                              }
+                              temp1 = p_numbers.top();
+                              p_numbers.pop();
+                              p_numbers.push(-1*temp1);
+                              debug("processOperator() -1 * %v1 ",temp1);
                               break;
     case operators::sin     : if( p_numbers.size() < 1 ) {
                                 debug("processOperator() sin: not enough numbers");
