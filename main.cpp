@@ -2,5 +2,6 @@
 
 //Main function 
 int main() {
-  return interface::talk();
+  interface i;
+  return i.talk();
 }
