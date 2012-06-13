@@ -278,7 +278,7 @@ void parser::processOperator() {
                               #endif
                               debug("processOperator() pi");
                               break;
-    case operators::e       : //If the local implementation defines M_E, use it, but if its missing due to it's not being standard, push our hardcoded pi
+    case operators::e       : //If the local implementation defines M_E, use it, but if its missing due to it's not being standard, push our hardcoded e
                               #ifdef M_E
                                 p_numbers.push(M_E);
                               #else
@@ -382,6 +382,7 @@ void parser::debug(const string& message, const double v1, const double v2, cons
   if( p_debug ) {
     string debugstr = message; //to save memory ressources, we get message as const reference, but in case we output debug, copy it to a modifyable string here
     int find;
+
     find = debugstr.find("%o1");
     if( find != string::npos )
       debugstr.replace(find,3,o2s(op1));

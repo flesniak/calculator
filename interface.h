@@ -1,10 +1,11 @@
 #include <deque>
 #include <string>
 #include <map>
+#include <list>
 
 using namespace std;
 
-static const char version[] = "0.4";
+static const char version[] = "0.5";
 
 class parser;
 
@@ -31,6 +32,13 @@ private:
   string::iterator p_commandIterator;
   bool p_poll;
 
-  enum command { parseLine, displayHelp, runTest, exitProgram, noCommand };
+  enum command { parseLine, displayHelp, runTest, exitProgram, toggleDebug, noCommand };
   map<string,command> p_commandMap;
+  map<command,string> p_commandHelpMap;
+  struct testExpression {
+    string expression;
+    double result;
+    string help;
+  };
+  list<testExpression> p_testExpressions;
 };

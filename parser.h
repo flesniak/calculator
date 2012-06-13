@@ -25,6 +25,7 @@ private:
   bool extractOperator(operators::ops &op);
   bool string2operator(const string &str, operators::ops &op);
   void processOperator();
+
   void debug(const string& message, const double v1 = 0, const double v2 = 0, const operators::ops op1 = operators::none, const operators::ops op2 = operators::none);
   void debug(const string& message, const operators::ops op1, const operators::ops op2 = operators::none);
   string d2s(const double v);

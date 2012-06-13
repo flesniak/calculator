@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 
 #include "interface.h"
 #include "parser.h"
@@ -20,10 +21,39 @@
 
 interface::interface() : p_poll(true) {
   p_commandMap["help"] = displayHelp;
+  p_commandHelpMap[displayHelp] = "Shows this help screen";
   p_commandMap["test"] = runTest;
+  p_commandHelpMap[runTest] = "Runs several calculations to test the parser class";
   p_commandMap["exit"] = exitProgram;
   p_commandMap["quit"] = exitProgram;
+  p_commandHelpMap[exitProgram] = "Exits the program";
+  p_commandMap["debug"] = toggleDebug;
+  p_commandHelpMap[toggleDebug] = "Toggles algorithm debugging (you may want to use this!)";
   p_commandMap[""]     = noCommand;
+
+  testExpression te;
+  te.expression = "4--3";
+  te.result     = 7;
+  te.help       = "Negation and subtraction can be distinguished";
+  p_testExpressions.push_back(te);
+  te.expression = "-4*sin(.5pi)";
+  te.result     = -4;
+  te.help       = "sin, cos, tan, arcsin, arccos, arctan can be accessed, constants pi and e exist";
+  p_testExpressions.push_back(te);
+  te.expression = "2e*4E5";
+  te.result     = 2174625.463;
+  te.help       = "Lowercase e is Euler's number, uppercase E will do *10^X";
+  p_testExpressions.push_back(te);
+  te.expression = "2pisin(2)";
+  te.result     = 5.71328;
+  te.help       = "Left-out multiplication signs will be inserted";
+  p_testExpressions.push_back(te);
+  te.expression = "(4+3)^-.5";
+  te.result     = 0.377964;
+  te.help       = "Parentheses and power are supported";
+  p_testExpressions.push_back(te);
+
+  cout.precision(16);
 }
 
 int interface::talk() {
@@ -38,9 +68,9 @@ int interface::talk() {
 
   //Create parser object
   p_parse = new parser;
-  p_parse->setDebug(true); //debugging true in development phase
+  //p_parse->setDebug(true); //debugging true in development phase
 
-  //Welcome user, Help
+  //Welcome user
   cout << "Calculate " << version << endl;
   cout << "Enter expression. You may type \"help\"." << endl << "> ";
 
@@ -96,11 +126,27 @@ void interface::parse(const string& str) {
 }
 
 void interface::help() {
-
+  cout << "Built-in commands:";
+  string str;
+  for(map<string,command>::iterator it = p_commandMap.begin(); it != p_commandMap.end(); it++)
+    if( !it->first.empty() )
+      cout << "  " << it->first << " - " << p_commandHelpMap[it->second] << endl;
+  cout << endl << "Everything else will be parsed as an mathematical expression, based on the following notation:" << endl;
+  for(list<testExpression>::iterator it = p_testExpressions.begin(); it != p_testExpressions.end(); it++)
+    cout << "  " << (*it).expression << " = " << (*it).result << " | " << (*it).help << endl;
 }
 
 void interface::test() {
-
+  for(list<testExpression>::iterator it = p_testExpressions.begin(); it != p_testExpressions.end(); it++) {
+    if( p_parse->parse((*it).expression) == parser::complete ) {
+      if( fabs( p_parse->result() - (*it).result ) < fabs((*it).result)*0.0001 )
+        cout << (*it).expression << " = " << (*it).result << " OK!" << endl;
+      else
+        cout << (*it).expression << " shall equal " << (*it).result << " but parser returned " << p_parse->result() << endl;
+    }
+    else
+      cout << (*it).expression << " failed: " << p_parse->getError() << endl;
+  }
 }
 
 void interface::processLine() {
@@ -114,6 +160,9 @@ void interface::processLine() {
                        break;
     case exitProgram : p_poll = false;
                        break;
+    case toggleDebug : p_parse->setDebug(!p_parse->getDebug());
+                       cout << "Debugging information " << (p_parse->getDebug() ? "enabled" : "disabled") << endl;
+                       break;
     case noCommand   : break;
     default          : parse(*p_commandHistoryIterator);
   }
@@ -122,7 +171,7 @@ void interface::processLine() {
   p_commandHistoryIterator = p_commandHistory.end()-1;
   p_commandIterator = (*p_commandHistoryIterator).begin();
   if( p_poll )
-    std::cout << "> ";
+    cout << "> ";
 }
 
 void interface::clearLine() {
@@ -137,7 +186,7 @@ void interface::showPreviousExpression() {
     clearLine();
     p_commandHistoryIterator--;
     p_commandIterator = (*p_commandHistoryIterator).end();
-    std::cout << "> " << *p_commandHistoryIterator;
+    cout << "> " << *p_commandHistoryIterator;
   }
 }
 
@@ -146,7 +195,7 @@ void interface::showNextExpression() {
     clearLine();
     ++p_commandHistoryIterator;
     p_commandIterator = (*p_commandHistoryIterator).end();
-    std::cout << "> " << *p_commandHistoryIterator;
+    cout << "> " << *p_commandHistoryIterator;
   }
 }
 
@@ -168,16 +217,23 @@ void interface::insertCharacter(char c) {
   p_commandIterator = (*p_commandHistoryIterator).insert(p_commandIterator,c);
   string::iterator it = p_commandIterator;
   for(; it < (*p_commandHistoryIterator).end(); it++)
-    std::cout << *it;
+    cout << *it;
   p_commandIterator++;
   for(; it > p_commandIterator; it--)
     putchar('\b');
 }
 
 void interface::deleteCharacter() {
-  if( p_commandIterator > p_commandHistory.back().begin() ) {
-    std::cout << "\b \b";
+  if( p_commandIterator > (*p_commandHistoryIterator).begin() ) {
+    cout << "\b \b";
     p_commandIterator--;
-    p_commandIterator = p_commandHistory.back().erase(p_commandIterator);
+    p_commandIterator = (*p_commandHistoryIterator).erase(p_commandIterator);
+    string::iterator it = p_commandIterator;
+    for(; it < (*p_commandHistoryIterator).end(); it++)
+      cout << *it;
+    cout << " \b";
+    for(; it > p_commandIterator; it--)
+      putchar('\b');
   }
 }
+
