@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include <iomanip>
 
 #include "interface.h"
 #include "parser.h"
@@ -20,16 +21,18 @@
 #endif
 
 interface::interface() : p_poll(true) {
-  p_commandMap["help"] = displayHelp;
-  p_commandHelpMap[displayHelp] = "Shows this help screen";
-  p_commandMap["test"] = runTest;
-  p_commandHelpMap[runTest] = "Runs several calculations to test the parser class";
-  p_commandMap["exit"] = exitProgram;
-  p_commandMap["quit"] = exitProgram;
-  p_commandHelpMap[exitProgram] = "Exits the program";
+  p_commandMap["help"]  = displayHelp;
+  p_commandMap["?"]  = displayHelp;
+  p_commandMap["test"]  = runTest;
+  p_commandMap["exit"]  = exitProgram;
+  p_commandMap["quit"]  = exitProgram;
   p_commandMap["debug"] = toggleDebug;
+  p_commandMap[""]      = noCommand;
+
+  p_commandHelpMap[displayHelp] = "Shows this help screen";
+  p_commandHelpMap[runTest] = "Runs several calculations to test the parser class";
+  p_commandHelpMap[exitProgram] = "Exits the program";
   p_commandHelpMap[toggleDebug] = "Toggles algorithm debugging (you may want to use this!)";
-  p_commandMap[""]     = noCommand;
 
   testExpression te;
   te.expression = "4--3";
@@ -55,7 +58,7 @@ interface::interface() : p_poll(true) {
 
   cout.precision(16);
 }
-
+#include <fstream>
 int interface::talk() {
 #if defined(__GNUC__) || defined(__MINGW32__)
   //Init shell interface
@@ -68,7 +71,6 @@ int interface::talk() {
 
   //Create parser object
   p_parse = new parser;
-  //p_parse->setDebug(true); //debugging true in development phase
 
   //Welcome user
   cout << "Calculate " << version << endl;
@@ -84,7 +86,7 @@ int interface::talk() {
   while( p_poll ) {
     c[charIndex] = getch();
     switch( c[charIndex] ) {
-      case 10  : putchar(10); //enter
+      case 10  : putchar(10); //newline
                  processLine();
                  break;
       case 127 : deleteCharacter();
@@ -107,6 +109,12 @@ int interface::talk() {
       case 68  : charIndex = 0;
                  moveCursorLeft();
                  break;
+      case 72  : charIndex = 0;
+                 moveCursorPos1();
+                 break;
+      case 70  : charIndex = 0;
+                 moveCursorEnd();
+                 break;
       default :  insertCharacter(c[charIndex]);
                  break;
     }
@@ -126,14 +134,15 @@ void interface::parse(const string& str) {
 }
 
 void interface::help() {
-  cout << "Built-in commands:";
+  cout << "Built-in commands:" << endl;
   string str;
   for(map<string,command>::iterator it = p_commandMap.begin(); it != p_commandMap.end(); it++)
     if( !it->first.empty() )
-      cout << "  " << it->first << " - " << p_commandHelpMap[it->second] << endl;
+      cout << setw(7) << it->first << " - " << p_commandHelpMap[it->second] << endl;
   cout << endl << "Everything else will be parsed as an mathematical expression, based on the following notation:" << endl;
-  for(list<testExpression>::iterator it = p_testExpressions.begin(); it != p_testExpressions.end(); it++)
-    cout << "  " << (*it).expression << " = " << (*it).result << " | " << (*it).help << endl;
+  for(list<testExpression>::iterator it = p_testExpressions.begin(); it != p_testExpressions.end(); it++) {
+    cout << setw(14) << (*it).expression << " = " << setw(12) << (*it).result << " | " << (*it).help << endl;
+  }
 }
 
 void interface::test() {
@@ -213,6 +222,20 @@ void interface::moveCursorLeft() {
   }
 }
 
+void interface::moveCursorPos1() {
+  while( p_commandIterator > (*p_commandHistoryIterator).begin() ) {
+    putchar('\b');
+    p_commandIterator--;
+  }
+}
+
+void interface::moveCursorEnd() {
+  while( p_commandIterator < (*p_commandHistoryIterator).end() ) {
+    putchar(*p_commandIterator);
+    p_commandIterator++;
+  }
+}
+
 void interface::insertCharacter(char c) {
   p_commandIterator = (*p_commandHistoryIterator).insert(p_commandIterator,c);
   string::iterator it = p_commandIterator;
@@ -230,10 +253,9 @@ void interface::deleteCharacter() {
     p_commandIterator = (*p_commandHistoryIterator).erase(p_commandIterator);
     string::iterator it = p_commandIterator;
     for(; it < (*p_commandHistoryIterator).end(); it++)
-      cout << *it;
+      putchar(*it);
     cout << " \b";
     for(; it > p_commandIterator; it--)
       putchar('\b');
   }
 }
-
