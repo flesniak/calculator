@@ -3,6 +3,20 @@
 #include <sstream>
 #include <iostream>
 #include <cmath>
+#include <limits>
+
+//If the local implementation defines M_PI, use it, but if its missing due to it's not being standard, push our hardcoded pi
+#ifdef M_PI
+  const double LPI = M_PI;
+#else
+  const double LPI = 3.14159;
+#endif
+//If the local implementation defines M_E, use it, but if its missing due to it's not being standard, push our hardcoded e
+#ifdef M_E
+  const double LE = M_E;
+#else
+  const double LE = 2.71828;
+#endif
 
 parser::parser() {
   clear();
@@ -20,12 +34,18 @@ parser::parser() {
   p_opmap["arcsin"] = operators::arcsin;
   p_opmap["arccos"] = operators::arccos;
   p_opmap["arctan"] = operators::arctan;
+  p_opmap["asin"] = operators::arcsin;
+  p_opmap["acos"] = operators::arccos;
+  p_opmap["atan"] = operators::arctan;
   p_opmap["SIN"] = operators::sin;
   p_opmap["COS"] = operators::cos;
   p_opmap["TAN"] = operators::tan;
   p_opmap["ARCSIN"] = operators::arcsin;
   p_opmap["ARCCOS"] = operators::arccos;
   p_opmap["ARCTAN"] = operators::arctan;
+  p_opmap["ASIN"] = operators::arcsin;
+  p_opmap["ACOS"] = operators::arccos;
+  p_opmap["ATAN"] = operators::arctan;
   p_opmap["("] = operators::lbracket;
   p_opmap[")"] = operators::rbracket;
   p_opmap["pi"] = operators::pi;
@@ -52,7 +72,7 @@ parser::state parser::parse(const string& expression) {
     if( !needoperator && extractNumber(temp) ) { //we won't try to read two numbers in a row (!needoperator), if extractNumber fails, try to exractOperator
       if( !p_operators.empty() && p_operators.top() > operators::operatorCount && p_operators.top() != operators::rbracket ) {
         debug("parse() missing operator before %v1",temp);
-        p_errorstring = "Operator missing";
+        p_errorstring = "missing operator at "+p_expression;
         p_state = syntaxerror;
         return p_state;
       }
@@ -137,6 +157,7 @@ void parser::processOperator() {
   switch( p_operators.top() ) {
     case operators::plus    : if( p_numbers.size() < 2 ) {
                                 debug("processOperator() plus: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
@@ -149,6 +170,7 @@ void parser::processOperator() {
                               break;
     case operators::minus   : if( p_numbers.size() < 2 ) {
                                 debug("processOperator() minus: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
@@ -161,6 +183,7 @@ void parser::processOperator() {
                               break;
     case operators::times   : if( p_numbers.size() < 2 ) {
                                 debug("processOperator() times: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
@@ -173,6 +196,7 @@ void parser::processOperator() {
                               break;
     case operators::divide  : if( p_numbers.size() < 2 ) {
                                 debug("processOperator() divide: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
@@ -190,6 +214,7 @@ void parser::processOperator() {
                               break;
     case operators::pow     : if( p_numbers.size() < 2 ) {
                                 debug("processOperator() pow: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
@@ -202,6 +227,7 @@ void parser::processOperator() {
                               break;
     case operators::negation : if( p_numbers.size() < 1 ) {
                                 debug("processOperator() negation: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
@@ -212,26 +238,35 @@ void parser::processOperator() {
                               break;
     case operators::sin     : if( p_numbers.size() < 1 ) {
                                 debug("processOperator() sin: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
                               temp1 = p_numbers.top();
                               p_numbers.pop();
-                              p_numbers.push(sin(temp1));
+                              temp2 = sin(temp1);
+                              if( fabs(temp2) < numeric_limits<double>::epsilon()*(temp1/LPI) ) //workaround for sin(n*pi) != 0
+                                temp2 = 0;
+                              p_numbers.push(temp2);
                               debug("processOperator() sin(%v1)",temp1);
                               break;
     case operators::cos     : if( p_numbers.size() < 1 ) {
                                 debug("processOperator() cos: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
                               temp1 = p_numbers.top();
                               p_numbers.pop();
-                              p_numbers.push(cos(temp1));
+                              temp2 = cos(temp1);
+                              if( fabs(temp2) < numeric_limits<double>::epsilon()*(temp1/LPI) )
+                                temp2 = 0;
+                              p_numbers.push(temp2);
                               debug("processOperator() cos(%v1)",temp1);
                               break;
     case operators::tan     : if( p_numbers.size() < 1 ) {
                                 debug("processOperator() tan: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
@@ -240,8 +275,9 @@ void parser::processOperator() {
                               p_numbers.push(tan(temp1));
                               debug("processOperator() tan(%v1)",temp1);
                               break;
-    case operators::arcsin  : if( p_numbers.size() < 1 ) { //no need to check domain, c++ does that for us, e.g. asin(-2) returns "nan"
+    case operators::arcsin  : if( p_numbers.size() < 1 ) { //no need to check domain, c++ does that for us, e.g. asin(2) returns "nan"
                                 debug("processOperator() arcsin: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
@@ -252,6 +288,7 @@ void parser::processOperator() {
                               break;
     case operators::arccos  : if( p_numbers.size() < 1 ) {
                                 debug("processOperator() arccos: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
@@ -262,6 +299,7 @@ void parser::processOperator() {
                               break;
     case operators::arctan  : if( p_numbers.size() < 1 ) {
                                 debug("processOperator() arctan: not enough numbers");
+                                p_errorstring = "not enough numbers";
                                 p_state = syntaxerror;
                                 return;
                               }
@@ -270,20 +308,10 @@ void parser::processOperator() {
                               p_numbers.push(atan(temp1));
                               debug("processOperator() arctan(%v1)",temp1);
                               break;
-    case operators::pi      : //If the local implementation defines M_PI, use it, but if its missing due to it's not being standard, push our hardcoded pi
-                              #ifdef M_PI
-                                p_numbers.push(M_PI);
-                              #else
-                                p_numbers.push(3.14159);
-                              #endif
+    case operators::pi      : p_numbers.push(LPI);
                               debug("processOperator() pi");
                               break;
-    case operators::e       : //If the local implementation defines M_E, use it, but if its missing due to it's not being standard, push our hardcoded e
-                              #ifdef M_E
-                                p_numbers.push(M_E);
-                              #else
-                                p_numbers.push(2.71828);
-                              #endif
+    case operators::e       : p_numbers.push(LE);
                               debug("processOperator() e");
                               break;
     case operators::lbracket : debug("processOperator() lbracket"); //nothing to do here, lbracket only gets processed while processing the corresponding rbracket, so its save to be pop'ed
@@ -295,7 +323,7 @@ void parser::processOperator() {
                                }
                                if( p_operators.empty() ) { //no lbracket
                                  p_state = syntaxerror;
-                                 p_errorstring = "Missing open parenthese";
+                                 p_errorstring = "Missing left parenthese";
                                  return;
                                }
                                break;
