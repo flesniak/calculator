@@ -6,7 +6,7 @@ using namespace std;
 
 namespace operators { //Namespace to avoid conflicts
   //sorted by importance, more important operators will usually be processed preferably (except parentheses)
-  enum ops { none, lbracket, rbracket, bracketCount, plus, minus, times, divide, pow, negation, operatorCount, sin, cos, tan, arcsin, arccos, arctan, functionCount, pi, e, constantCount };
+  enum ops { none, lbracket, rbracket, bracketCount, plus, minus, times, divide, pow, negation, operatorCount, sin, cos, tan, arcsin, arccos, arctan, sqrt, abs, functionCount, pi, e, ans, constantCount };
 };
 
 class parser {
@@ -36,6 +36,8 @@ private:
   stack<double> p_numbers;
   stack<operators::ops> p_operators;
   map<string,operators::ops> p_opmap;
+  double p_ans;
   string p_errorstring;
   bool p_debug;
 };
+

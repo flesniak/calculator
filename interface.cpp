@@ -55,6 +55,10 @@ interface::interface() : p_poll(true) {
   te.result     = 0.377964;
   te.help       = "Parentheses and power are supported";
   p_testExpressions.push_back(te);
+  te.expression = "abs(-sqrt(ans))";
+  te.result     = 0.614788;
+  te.help       = "Square root, absolute value and last result (ans)";
+  p_testExpressions.push_back(te);
 
   cout.precision(16);
 }

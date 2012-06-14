@@ -18,9 +18,8 @@
   const double LE = 2.71828;
 #endif
 
-parser::parser() {
+parser::parser() : p_debug(false), p_ans(numeric_limits<double>::quiet_NaN()) {
   clear();
-  p_debug = false;
 
   //Initialize operator map
   p_opmap["+"] = operators::plus;
@@ -46,6 +45,12 @@ parser::parser() {
   p_opmap["ASIN"] = operators::arcsin;
   p_opmap["ACOS"] = operators::arccos;
   p_opmap["ATAN"] = operators::arctan;
+  p_opmap["sqrt"] = operators::sqrt;
+  p_opmap["SQRT"] = operators::sqrt;
+  p_opmap["ans"] = operators::ans;
+  p_opmap["ANS"] = operators::ans;
+  p_opmap["abs"] = operators::abs;
+  p_opmap["ABS"] = operators::abs;
   p_opmap["("] = operators::lbracket;
   p_opmap[")"] = operators::rbracket;
   p_opmap["pi"] = operators::pi;
@@ -58,6 +63,8 @@ parser::parser() {
 //parse expression
 parser::state parser::parse(const string& expression) {
   debug("parse() initializing to parse "+expression);
+  if( !p_numbers.empty() )
+    p_ans = p_numbers.top();
   clear(); //make sure no data from previous parsing is left
   p_state = running;
   p_expression = expression; //we won't modify expression
@@ -308,6 +315,37 @@ void parser::processOperator() {
                               p_numbers.push(atan(temp1));
                               debug("processOperator() arctan(%v1)",temp1);
                               break;
+    case operators::sqrt    : if( p_numbers.size() < 1 ) {
+                                debug("processOperator() sqrt: not enough numbers");
+                                p_errorstring = "not enough numbers";
+                                p_state = syntaxerror;
+                                return;
+                              }
+                              temp1 = p_numbers.top();
+                              p_numbers.pop();
+                              p_numbers.push(sqrt(temp1));
+                              debug("processOperator() sqrt(%v1)",temp1);
+                              break;
+    case operators::abs     : if( p_numbers.size() < 1 ) {
+                                debug("processOperator() abs: not enough numbers");
+                                p_errorstring = "not enough numbers";
+                                p_state = syntaxerror;
+                                return;
+                              }
+                              temp1 = p_numbers.top();
+                              p_numbers.pop();	
+                              p_numbers.push(fabs(temp1));
+                              debug("processOperator() abs(%v1)",temp1);
+                              break;
+    case operators::ans    : if( p_ans != p_ans ) {
+                                debug("processOperator() ans: no previous result");
+                                p_errorstring = "no previous result (ans) available";
+                                p_state = syntaxerror;
+                                return;
+                              }
+                              p_numbers.push(p_ans);
+                              debug("processOperator() ans [%v1]",p_ans);
+                              break;
     case operators::pi      : p_numbers.push(LPI);
                               debug("processOperator() pi");
                               break;
@@ -452,3 +490,4 @@ void parser::setDebug(bool active) {
 bool parser::getDebug() {
   return p_debug;
 }
+
