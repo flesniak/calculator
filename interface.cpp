@@ -62,7 +62,7 @@ interface::interface() : p_poll(true) {
 
   cout.precision(16);
 }
-#include <fstream>
+
 int interface::talk() {
 #if defined(__GNUC__) || defined(__MINGW32__)
   //Init shell interface
@@ -86,8 +86,6 @@ int interface::talk() {
   p_commandHistoryIterator = p_commandHistory.begin();
   p_commandIterator = p_commandHistory.back().begin();
 
-  ofstream dbg;
-  dbg.open("interface.log",ios::trunc|ios::out);
   //MAIN LOOP
   while( p_poll ) {
     c[charIndex] = getch();
@@ -161,7 +159,6 @@ int interface::talk() {
   //It's done
   tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
   cout << "Goodbye" << endl;
-dbg.close();
   return 0;
 }
 
