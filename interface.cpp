@@ -86,9 +86,12 @@ int interface::talk() {
   p_commandHistoryIterator = p_commandHistory.begin();
   p_commandIterator = p_commandHistory.back().begin();
 
+  ofstream dbg;
+  dbg.open("interface.log",ios::trunc|ios::out);
   //MAIN LOOP
   while( p_poll ) {
     c[charIndex] = getch();
+    dbg << "char " << (int)c[charIndex] << " charIndex " << (int)charIndex << endl;
     switch( c[charIndex] ) {
       case 10  : putchar(10); //newline
                  processLine();
@@ -97,27 +100,58 @@ int interface::talk() {
                  break;
       case 27  : if( charIndex == 0 )
                    charIndex++;
+                 else
+                   charIndex = 0;
                  break;
       case 91  : if( charIndex == 1 )
                    charIndex++;
+                 else {
+                   insertCharacter(c[charIndex]);
+                   charIndex = 0;
+                 }
                  break;
-      case 65  : charIndex = 0;
-                 showPreviousExpression();
+      case 79  : if( charIndex == 1 )
+                   charIndex++;
+                 else {
+                   insertCharacter(c[charIndex]);
+                   charIndex = 0;
+                 }
                  break;
-      case 66  : charIndex = 0;
-                 showNextExpression();
+      case 65  : if( charIndex == 2 )
+                   showPreviousExpression();
+                 else
+                   insertCharacter(c[charIndex]);
+                 charIndex = 0;
                  break;
-      case 67  : charIndex = 0;
-                 moveCursorRight();
+      case 66  : if( charIndex == 2 )
+                   showNextExpression();
+                 else
+                   insertCharacter(c[charIndex]);
+                 charIndex = 0;
                  break;
-      case 68  : charIndex = 0;
-                 moveCursorLeft();
+      case 67  : if( charIndex == 2 )
+                   moveCursorRight();
+                 else
+                   insertCharacter(c[charIndex]);
+                 charIndex = 0;
                  break;
-      case 72  : charIndex = 0;
-                 moveCursorPos1();
+      case 68  : if( charIndex == 2 )
+                   moveCursorLeft();
+                 else
+                   insertCharacter(c[charIndex]);
+                 charIndex = 0;
                  break;
-      case 70  : charIndex = 0;
-                 moveCursorEnd();
+      case 72  : if( charIndex == 2 )
+                   moveCursorPos1();
+                 else
+                   insertCharacter(c[charIndex]);
+                 charIndex = 0;
+                 break;
+      case 70  : if( charIndex == 2 )
+                   moveCursorEnd();
+                 else
+                   insertCharacter(c[charIndex]);
+                 charIndex = 0;
                  break;
       default :  insertCharacter(c[charIndex]);
                  break;
@@ -127,6 +161,7 @@ int interface::talk() {
   //It's done
   tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
   cout << "Goodbye" << endl;
+dbg.close();
   return 0;
 }
 
@@ -241,6 +276,8 @@ void interface::moveCursorEnd() {
 }
 
 void interface::insertCharacter(char c) {
+  if( c < 0 ) //Negative characters (unsigned >127) represent extended characters that spread over multiple bytes and break out terminal
+    return;
   p_commandIterator = (*p_commandHistoryIterator).insert(p_commandIterator,c);
   string::iterator it = p_commandIterator;
   for(; it < (*p_commandHistoryIterator).end(); it++)
