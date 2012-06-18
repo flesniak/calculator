@@ -89,7 +89,6 @@ int interface::talk() {
   //MAIN LOOP
   while( p_poll ) {
     c[charIndex] = getch();
-    dbg << "char " << (int)c[charIndex] << " charIndex " << (int)charIndex << endl;
     switch( c[charIndex] ) {
       case 10  : putchar(10); //newline
                  processLine();
