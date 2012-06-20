@@ -80,7 +80,7 @@ int interface::talk() {
   cout << "Calculate " << version << endl;
   cout << "Enter expression. You may type \"help\"." << endl << "> ";
 
-  char c[3];
+  char c[4];
   unsigned char charIndex = 0;
   p_commandHistory.push_back(string()); //prepare an empty prompt
   p_commandHistoryIterator = p_commandHistory.begin();
@@ -108,6 +108,13 @@ int interface::talk() {
                  }
                  break;
       case 79  : if( charIndex == 1 )
+                   charIndex++;
+                 else {
+                   insertCharacter(c[charIndex]);
+                   charIndex = 0;
+                 }
+                 break;
+      case 51  : if( charIndex == 2 )
                    charIndex++;
                  else {
                    insertCharacter(c[charIndex]);
@@ -146,6 +153,12 @@ int interface::talk() {
                  break;
       case 70  : if( charIndex == 2 )
                    moveCursorEnd();
+                 else
+                   insertCharacter(c[charIndex]);
+                 charIndex = 0;
+                 break;
+      case 126  : if( charIndex == 3 )
+                   deleteCharacterReverse();
                  else
                    insertCharacter(c[charIndex]);
                  charIndex = 0;
@@ -285,7 +298,7 @@ void interface::insertCharacter(char c) {
 
 void interface::deleteCharacter() {
   if( p_commandIterator > (*p_commandHistoryIterator).begin() ) {
-    cout << "\b \b";
+    putchar('\b');
     p_commandIterator--;
     p_commandIterator = (*p_commandHistoryIterator).erase(p_commandIterator);
     string::iterator it = p_commandIterator;
@@ -296,3 +309,16 @@ void interface::deleteCharacter() {
       putchar('\b');
   }
 }
+
+void interface::deleteCharacterReverse() {
+  if( p_commandIterator < (*p_commandHistoryIterator).end() ) {
+    p_commandIterator = (*p_commandHistoryIterator).erase(p_commandIterator);
+    string::iterator it = p_commandIterator;
+    for(; it < (*p_commandHistoryIterator).end(); it++)
+      putchar(*it);
+    cout << " \b";
+    for(; it > p_commandIterator; it--)
+      putchar('\b');
+  }
+}
+

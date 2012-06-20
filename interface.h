@@ -27,6 +27,7 @@ private:
   void moveCursorEnd();
   void insertCharacter(char c);
   void deleteCharacter();
+  void deleteCharacterReverse();
 
   parser *p_parse;
   deque<string> p_commandHistory;
