@@ -176,7 +176,7 @@ void interface::help() {
       cout << setw(7) << it->first << " - " << p_commandHelpMap[it->second] << endl;
   cout << endl << "Everything else will be parsed as an mathematical expression, based on the following notation:" << endl;
   for(list<testExpression>::iterator it = p_testExpressions.begin(); it != p_testExpressions.end(); it++) {
-    cout << setw(14) << (*it).expression << " = " << setw(12) << (*it).result << " | " << (*it).help << endl;
+    cout << setw(15) << (*it).expression << " = " << setw(12) << (*it).result << " | " << (*it).help << endl;
   }
 }
 
