@@ -283,7 +283,7 @@ void parser::processOperator() {
                               if( fabs(temp2) < numeric_limits<double>::epsilon()*(temp1/LPI) )
                                 temp2 = 0;
                               if( 1/fabs(temp2) < numeric_limits<double>::epsilon()*(temp1/LPI) )
-                                temp2 = numeric_limits<double>::quiet_NaN();
+                                temp2 = numeric_limits<double>::infinity();
                               p_numbers.push(temp2);
                               debug("processOperator() tan(%v1)",temp1);
                               break;
