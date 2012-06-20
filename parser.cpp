@@ -279,7 +279,12 @@ void parser::processOperator() {
                               }
                               temp1 = p_numbers.top();
                               p_numbers.pop();
-                              p_numbers.push(tan(temp1));
+                              temp2 = tan(temp1);
+                              if( fabs(temp2) < numeric_limits<double>::epsilon()*(temp1/LPI) )
+                                temp2 = 0;
+                              if( 1/fabs(temp2) < numeric_limits<double>::epsilon()*(temp1/LPI) )
+                                temp2 = numeric_limits<double>::quiet_NaN();
+                              p_numbers.push(temp2);
                               debug("processOperator() tan(%v1)",temp1);
                               break;
     case operators::arcsin  : if( p_numbers.size() < 1 ) { //no need to check domain, c++ does that for us, e.g. asin(2) returns "nan"
