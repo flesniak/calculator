@@ -16,7 +16,7 @@ public:
 private:
   void help();
   void test();
-  void parse(const string&);
+  void parse(string&);
   void processLine();
   void clearLine();
   void showPreviousExpression();

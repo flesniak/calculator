@@ -174,7 +174,10 @@ int interface::talk() {
   return 0;
 }
 
-void interface::parse(const string& str) {
+void interface::parse(string& str) {
+  size_t pos;
+  while( (pos = str.find(' ')) != str.npos )
+    str.erase(pos,1);
   if( p_parse->parse(str) == parser::complete )
      cout << str << " = " << p_parse->result() << endl;
   else
@@ -208,7 +211,7 @@ void interface::test() {
 
 void interface::processLine() {
   command cmd = parseLine;
-  if( p_commandMap.count(*p_commandHistoryIterator) )
+  if( p_commandMap.count(*p_commandHistoryIterator) ) //Handle built-in commands
     cmd = p_commandMap[*p_commandHistoryIterator];
   switch( cmd ) {
     case displayHelp : help();
