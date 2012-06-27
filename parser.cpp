@@ -6,7 +6,7 @@
 #include <limits>
 
 //If the local implementation defines M_PI, use it, but if its missing due to it's not being standard, push our hardcoded pi
-#ifdef M_PI
+#ifdef M_PI	
   const double LPI = M_PI;
 #else
   const double LPI = 3.14159;
@@ -252,10 +252,10 @@ void parser::processOperator() {
                               temp1 = p_numbers.top();
                               p_numbers.pop();
                               temp2 = sin(temp1);
-                              if( fabs(temp2) < numeric_limits<double>::epsilon()*(temp1/LPI) ) //workaround for sin(n*pi) != 0
+                              if( fabs(temp2) < numeric_limits<double>::epsilon()*(2*temp1/LPI) ) //workaround for sin(n*pi) != 0
                                 temp2 = 0;
                               p_numbers.push(temp2);
-                              debug("processOperator() sin(%v1)",temp1);
+                              debug("processOperator() sin(%v1) = %v2",temp1,temp2);
                               break;
     case operators::cos     : if( p_numbers.size() < 1 ) {
                                 debug("processOperator() cos: not enough numbers");
@@ -266,7 +266,7 @@ void parser::processOperator() {
                               temp1 = p_numbers.top();
                               p_numbers.pop();
                               temp2 = cos(temp1);
-                              if( fabs(temp2) < numeric_limits<double>::epsilon()*(temp1/LPI) )
+                              if( fabs(temp2) < numeric_limits<double>::epsilon()*(2*temp1/LPI) )
                                 temp2 = 0;
                               p_numbers.push(temp2);
                               debug("processOperator() cos(%v1)",temp1);
@@ -280,9 +280,9 @@ void parser::processOperator() {
                               temp1 = p_numbers.top();
                               p_numbers.pop();
                               temp2 = tan(temp1);
-                              if( fabs(temp2) < numeric_limits<double>::epsilon()*(temp1/LPI) )
+                              if( fabs(temp2) < numeric_limits<double>::epsilon()*(2*temp1/LPI) )
                                 temp2 = 0;
-                              if( 1/fabs(temp2) < numeric_limits<double>::epsilon()*(temp1/LPI) )
+                              if( 1/fabs(temp2) < numeric_limits<double>::epsilon()*(2*temp1/LPI) )
                                 temp2 = numeric_limits<double>::infinity();
                               p_numbers.push(temp2);
                               debug("processOperator() tan(%v1)",temp1);
