@@ -1,3 +1,16 @@
+/***********************************************************/
+/*                   interface class                       */
+/* Talks to the user, handles special commands and         */
+/* implements shell-like editing (using cursors, backspace */
+/* etc.) for unix-like systems. Should also work on win32, */
+/* but is currently untested and unsupported               */
+/*                                                         */
+/* AUTHOR: Fabian Lesniak <fabian.lesniak@student.kit.edu> */
+/***********************************************************/
+
+#ifndef INTERFACE_H
+#define INTERFACE_H
+
 #include <deque>
 #include <string>
 #include <map>
@@ -45,3 +58,5 @@ private:
   };
   list<testExpression> p_testExpressions;
 };
+
+#endif //INTERFACE_H

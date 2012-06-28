@@ -1,3 +1,9 @@
+/***********************************************************/
+/*              parser class implementation                */
+/*                                                         */
+/* AUTHOR: Fabian Lesniak <fabian.lesniak@student.kit.edu> */
+/***********************************************************/
+
 #include "parser.h"
 
 #include <sstream>

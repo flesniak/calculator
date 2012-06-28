@@ -1,3 +1,14 @@
+/***********************************************************/
+/*                    parser class                         */
+/* Tries to evaluate string given to parse() member,       */
+/* obtain result via result().                             */
+/*                                                         */
+/* AUTHOR: Fabian Lesniak <fabian.lesniak@student.kit.edu> */
+/***********************************************************/
+
+#ifndef PARSER_H
+#define PARSER_H
+
 #include <string>
 #include <stack>
 #include <map>
@@ -41,3 +52,4 @@ private:
   bool p_debug;
 };
 
+#endif //PARSER_H

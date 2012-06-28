@@ -1,3 +1,9 @@
+/***********************************************************/
+/*            interface class implementation               */
+/*                                                         */
+/* AUTHOR: Fabian Lesniak <fabian.lesniak@student.kit.edu> */
+/***********************************************************/
+
 #include <iostream>
 #include <cmath>
 #include <iomanip>
