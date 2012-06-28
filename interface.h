@@ -18,7 +18,7 @@
 
 using namespace std;
 
-static const char version[] = "0.7a";
+static const char version[] = "0.7b";
 
 class parser;
 
