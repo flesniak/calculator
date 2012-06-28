@@ -93,6 +93,8 @@ int interface::talk() {
       case 10  : putchar(10); //newline
                  processLine();
                  break;
+      case 4   : p_poll = false;
+                 break;
       case 127 : deleteCharacter();
                  break;
       case 27  : if( charIndex == 0 )
