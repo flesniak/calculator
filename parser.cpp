@@ -11,7 +11,7 @@
 #include <cmath>
 #include <limits>
 
-parser::parser() : p_debug(false), p_ans(numeric_limits<double>::quiet_NaN()) {
+parser::parser() {
   clear();
 
   p_opmap["+"] = operators::plus;
@@ -30,9 +30,6 @@ parser::parser() : p_debug(false), p_ans(numeric_limits<double>::quiet_NaN()) {
 
 //parse expression
 parser::state parser::parse(const string& expression) {
-  debug("parse() initializing to parse "+expression);
-  if( !p_numbers.empty() )
-    p_ans = p_numbers.top();
   clear(); //make sure no data from previous parsing is left
   p_state = running;
   p_expression = expression; //we won't modify expression
@@ -42,18 +39,14 @@ parser::state parser::parse(const string& expression) {
 
   //Shunting-yard algorithm
   while( p_state == running && !p_expression.empty() ) { //process p_expression until it is empty or we encouter a p_state change
-    debug("parse() parsing expression "+p_expression+(needoperator ? " need operator" : " dont need operator"));
     //Process input
     if( !needoperator && extractNumber(temp) ) { //we won't try to read two numbers in a row (!needoperator), if extractNumber fails, try to exractOperator
-      if( !p_operators.empty() && p_operators.top() > operators::operatorCount && p_operators.top() != operators::rbracket ) {
-        debug("parse() missing operator before %v1",temp);
-        p_errorstring = "missing operator at "+p_expression;
+      if( !p_operators.empty() && p_operators.top() > operators::operatorCount ) {
         p_state = syntaxerror;
         return p_state;
       }
       p_numbers.push(temp);
       needoperator = true;
-      debug("parse() found number %v1",p_numbers.top());
     }
     else { //BEGIN OPERATOR HANDLING (this will be nasty)
       if( extractOperator(op) ) {
@@ -61,24 +54,21 @@ parser::state parser::parse(const string& expression) {
         if( !needoperator && op == operators::minus )
           op = operators::negation;
 
-        while( p_state == running && !p_operators.empty() && p_operators.top() >= op ) {
-          debug("parse() preferring operator %o1 over %o2",p_operators.top(),op);
+        while( p_state == running && !p_operators.empty() && p_operators.top() >= op )
           processOperator();
-        }
         if( p_state != running )
           return p_state;
 
         p_operators.push(op);
 
         //Constants are just being replaced, so we still need an operator!
-        if( op > operators::functionCount || op == operators::rbracket )
+        if( op > operators::functionCount )
           needoperator = true;
         else
           needoperator = false;
       }
       else { //extractOperator was unable to process p_expression
         p_state = syntaxerror;
-        p_errorstring = "unable to parse " + p_expression;
         return p_state;
       }
     } //END OPERATOR HANDLING
@@ -88,7 +78,6 @@ parser::state parser::parse(const string& expression) {
     processOperator();
 
   if( !p_operators.empty() && !p_numbers.empty() && p_numbers.size() > 1 ) {
-    p_errorstring = "Too few operators!";
     p_state = syntaxerror;
     return p_state;
   }
@@ -110,7 +99,6 @@ void parser::processOperator() {
   temp1 = p_numbers.top();
   p_numbers.pop();
   if( p_numbers.size() < ((p_operators.top() < operators::negation) ? 2 : 1) ) {
-    p_errorstring = "not enough numbers";
     p_state = syntaxerror;
     return;
   }
